@@ -8,15 +8,14 @@
         <title>Tic Tac Toe</title>
     </head>
     <body>
+        <nav class="navbar navbar-default fixed-top">
+          <div class="navbar-brand">Tic Tac Toe</div>
+        </nav>
 
-    <nav class="navbar navbar-default fixed-top">
-      <div class="navbar-brand">Tic Tac Toe</div>
-    </nav>
-
-    <div class="container">
-        @yield('content')
-    </div>
-    <script src="/js/app.js"></script>
-</body>
+        <div class="container">
+            @yield('content')
+        </div>
+        <script src="/js/app.js"></script>
+    </body>
 
 </html>

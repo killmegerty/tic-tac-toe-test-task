@@ -16,8 +16,9 @@ class CreateGamesHistoryTable extends Migration
         Schema::create('games_history', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('game_id');
-            $table->string('row_column');
-            $table->string('value');
+            $table->integer('turn');
+            $table->integer('cell_index');
+            $table->string('cell_value');
             $table->timestamps();
         });
     }

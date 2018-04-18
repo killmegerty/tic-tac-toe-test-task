@@ -43279,15 +43279,22 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony default export */ __webpack_exports__["default"] = ({
     data: function data() {
         return {
-            gameSessionHash: __WEBPACK_IMPORTED_MODULE_1_uuid___default.a.v4()
+            cellIdCounter: 0,
+            gameSessionUuid: __WEBPACK_IMPORTED_MODULE_1_uuid___default.a.v4(),
+            playerCellValue: 'X'
         };
     },
     methods: {
-        onCellClick: function onCellClick(e) {
-            console.log('cell clicked', e.target.id);
+        onCellClick: function onCellClick(e, cellIndex) {
+            console.log('cell clicked', e.target.id, cellIndex);
             e.target.innerHTML = 'X';
 
-            __WEBPACK_IMPORTED_MODULE_0_axios___default.a.get('https://randomuser.me/api/').then(function (response) {
+            __WEBPACK_IMPORTED_MODULE_0_axios___default.a.post('/api/game-cell-click', {
+                game_session_uuid: this.gameSessionUuid,
+                cell_index: cellIndex,
+                cell_value: this.playerCellValue
+            }).then(function (response) {
+                // computer turn
                 console.log(response.data);
             }).catch(function (e) {
                 console.log('error occured', e);
@@ -43304,13 +43311,13 @@ var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c("div", { staticClass: "container" }, [
+  return _c("div", [
     _c("div", { staticClass: "row" }, [
       _c("div", { staticClass: "col-md-6" }, [
         _c("p", [
           _vm._v(
             "\n                Game session: " +
-              _vm._s(_vm.gameSessionHash) +
+              _vm._s(_vm.gameSessionUuid) +
               "\n            "
           )
         ])
@@ -43331,8 +43338,12 @@ var render = function() {
                       "td",
                       {
                         staticClass: "game-cell",
-                        attrs: { id: "cell-" + row + "-" + cell },
-                        on: { click: _vm.onCellClick }
+                        attrs: { id: "cell-" + (cell + 3 * (row - 1) - 1) },
+                        on: {
+                          click: function($event) {
+                            _vm.onCellClick($event, cell + 3 * (row - 1) - 1)
+                          }
+                        }
                       },
                       [_c("div", { staticClass: "content" })]
                     )

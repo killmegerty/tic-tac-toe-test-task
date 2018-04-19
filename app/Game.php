@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\DB;
 class Game extends Model
 {
     protected $fillable = ['game_session_uuid'];
+    const STATUS_DRAW = 'draw';
+    const STATUS_O_WIN = 'winner \'O\'';
+    const STATUS_X_WIN = 'winner \'X\'';
 
     public function gameHistory()
     {

@@ -12,21 +12,41 @@
 // components/TicTacToeComponent
 .game-grid-container {
     text-align: center;
-    td {
-        width: 33.33%;
+    .o-cell {
+        background-image: url('/img/o-img.png');
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+    .x-cell {
+        background-image: url('/img/x-img.png');
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+    .square-box {
+        display: inline-block;
         position: relative;
+        width: 30%;
+        margin-left: 5px;
+        max-width: 100px;
+        overflow: hidden;
+        border: 1px solid $brand-primary;
     }
-    td:after {
-        content: '';
+    .square-box:before{
+        content: "";
         display: block;
-        margin-top: 100%;
+        padding-top: 100%;
     }
-    td .content {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: #7afd90;
-    }
+}
+// other
+.col-center {
+    float: none;
+    margin: 0 auto;
+}
+.mt-5 {
+    margin-top: 5px;
+}
+.mb-15 {
+    margin-bottom: 15px;
 }

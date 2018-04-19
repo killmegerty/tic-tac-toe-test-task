@@ -8354,23 +8354,46 @@ button.close {
   text-align: center;
 }
 
-.game-grid-container td {
-  width: 33.33%;
+.game-grid-container .o-cell {
+  background-image: url("/img/o-img.png");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.game-grid-container .x-cell {
+  background-image: url("/img/x-img.png");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.game-grid-container .square-box {
+  display: inline-block;
   position: relative;
+  width: 30%;
+  margin-left: 5px;
+  max-width: 100px;
+  overflow: hidden;
+  border: 1px solid #3097D1;
 }
 
-.game-grid-container td:after {
-  content: '';
+.game-grid-container .square-box:before {
+  content: "";
   display: block;
-  margin-top: 100%;
+  padding-top: 100%;
 }
 
-.game-grid-container td .content {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #7afd90;
+.col-center {
+  float: none;
+  margin: 0 auto;
+}
+
+.mt-5 {
+  margin-top: 5px;
+}
+
+.mb-15 {
+  margin-bottom: 15px;
 }
 

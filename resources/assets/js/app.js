@@ -7,6 +7,7 @@ Vue.use(VueRouter);
 
 import App from './views/App';
 import Index from './views/Index';
+import Join from './views/Join';
 import GameHuman from './views/GameHuman';
 import GameAi from './views/GameAi';
 
@@ -17,6 +18,11 @@ const router = new VueRouter({
             path: '/',
             name: 'index',
             component: Index
+        },
+        {
+            path: '/join',
+            name: 'join',
+            component: Join
         },
         {
             path: '/game-ai',

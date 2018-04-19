@@ -11,14 +11,16 @@
                     <p>
                         Game Session UUID: {{ gameObj.gameSessionUuid }}
                     </p>
-                    <div v-show="qrCode.length && currentGameMode == 'vs_human'">
+                    <div v-show="qrCode.length && currentGameMode == 'vs_human' && whoAmI == 'host'">
                         <p>
                             Use QR code for inviting your opponent:
                         </p>
                         <p>
                             <img v-bind:src="qrCode" alt="" />
                         </p>
-                        <p>Direct invite link: {{ directLink }}</p>
+                        <p>
+                            Direct invite link: <a v-bind:href="directLink" target="_blank">{{ directLink }}</a>
+                        </p>
                     </div>
                     <p>
                         My Role: {{ whoAmI }}

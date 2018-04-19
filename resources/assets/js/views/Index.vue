@@ -29,12 +29,12 @@
                         childs: [
                             {
                                 title: 'Host',
-                                link: null,
+                                link: '/game-human',
                                 childs: null
                             },
                             {
                                 title: 'Join',
-                                link: null,
+                                link: '/join',
                                 childs: null
                             }
                         ]

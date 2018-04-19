@@ -6,6 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 
 class CreateGamesTable extends Migration
 {
+
     /**
      * Run the migrations.
      *
@@ -16,6 +17,7 @@ class CreateGamesTable extends Migration
         Schema::create('games', function (Blueprint $table) {
             $table->increments('id');
             $table->string('game_session_uuid')->unique();
+            $table->string('mode')->nullable();
             $table->string('status')->nullable();
             $table->timestamps();
         });

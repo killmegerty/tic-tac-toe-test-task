@@ -3,26 +3,34 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Events\GameHistoryCreated;
 use App\Game;
 use App\GameHistory;
 
 class GameController extends Controller
 {
-    public function cellClick(Request $request)
-    {
+    public function cellClickHandler(Request $request) {
         $request->validate([
             'game_session_uuid' => 'required',
             'cell_index' => 'required',
             'cell_value' => 'required'
         ]);
 
-        // create game if not exists
-        $game = Game::firstOrCreate(
-            ['game_session_uuid' => $request->game_session_uuid]
-        );
+        $game = Game::where('game_session_uuid', $request->game_session_uuid)
+                    ->first();
+
+        if (!$game) {
+            return [
+                'status' => 'error',
+                'error' => 'game not exists'
+            ];
+        }
 
         if ($game->status != null) {
-            return ['error' => 'game already finished'];
+            return [
+                'status' => 'error',
+                'error' => 'game already finished'
+            ];
         }
 
         // get last turn if exists
@@ -37,6 +45,9 @@ class GameController extends Controller
         $gameHistoryTurn->cell_index = $request->cell_index;
         $gameHistoryTurn->cell_value = $request->cell_value;
         if ($gameHistoryTurn->save()) {
+            // announce that value saved in DB
+            broadcast(new GameHistoryCreated($gameHistoryTurn, $game))->toOthers();
+
             $winner = $this->_checkWinner(
                 $this->_getGameBoard($request->game_session_uuid),
                 $request->game_session_uuid
@@ -45,10 +56,64 @@ class GameController extends Controller
                 return ['status' => 'OK'];
             }
 
-            $aiTurn = $this->_aiTurn($request->game_session_uuid);
-            return compact('aiTurn');
+            if ($game->mode == Game::MODE_VS_AI) {
+                $aiTurn = $this->_aiDoTurn($request->game_session_uuid);
+                $status = 'OK';
+                return compact('aiTurn', 'status');
+            } else {
+                return ['status' => 'OK'];
+            }
         }
     }
+
+    // public function cellClick(Request $request)
+    // {
+    //     $request->validate([
+    //         'game_session_uuid' => 'required',
+    //         'cell_index' => 'required',
+    //         'cell_value' => 'required'
+    //     ]);
+    //
+    //     // create game if not exists
+    //     $game = Game::firstOrCreate(
+    //         ['game_session_uuid' => $request->game_session_uuid]
+    //     );
+    //
+    //     if ($game->status != null) {
+    //         return [
+    //             'status' => 'error',
+    //             'error' => 'game already finished'
+    //         ];
+    //     }
+    //
+    //     // get last turn if exists
+    //     $currentGameHistory = GameHistory::where(
+    //         'game_id', $game->id
+    //     )->orderBy('turn', 'desc')->first();
+    //
+    //     // save human turn in DB
+    //     $gameHistoryTurn = new GameHistory();
+    //     $gameHistoryTurn->game_id = $game->id;
+    //     $gameHistoryTurn->turn = $currentGameHistory ? $currentGameHistory->turn + 1 : 0;
+    //     $gameHistoryTurn->cell_index = $request->cell_index;
+    //     $gameHistoryTurn->cell_value = $request->cell_value;
+    //     if ($gameHistoryTurn->save()) {
+    //         // announce that value saved in DB
+    //         broadcast(new GameHistoryCreated($gameHistoryTurn, $game))->toOthers();
+    //
+    //         $winner = $this->_checkWinner(
+    //             $this->_getGameBoard($request->game_session_uuid),
+    //             $request->game_session_uuid
+    //         );
+    //         if ($winner) {
+    //             return ['status' => 'OK'];
+    //         }
+    //
+    //         $aiTurn = $this->_aiDoTurn($request->game_session_uuid);
+    //         $status = 'OK';
+    //         return compact('aiTurn', 'status');
+    //     }
+    // }
 
     protected function _updateGameBoard($gameSessionUuid) {
         $gameBoard = [null, null, null, null, null, null, null, null, null];
@@ -114,7 +179,7 @@ class GameController extends Controller
         return false;
     }
 
-    protected function _aiTurn($gameSessionUuid)
+    protected function _aiDoTurn($gameSessionUuid)
     {
         $game = Game::with('gameHistory')
                 ->where('game_session_uuid', $gameSessionUuid)

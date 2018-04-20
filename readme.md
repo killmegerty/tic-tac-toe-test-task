@@ -5,16 +5,20 @@
 $ composer install
 $ npm install
 ```
+Дать полные права на кеш\лог папки для ларавела
+```sh
+$ sudo chmod 777 -R storage/
+$ sudo chmod 777 -R bootstrap/cache/
+```
 Создание БД
 ```sh
-mysql> create database minenko_konstantin;
-mysql> grant all privileges on minenko_konstantin.* to minenko_konstantin@localhost identified by 'minenko_konstantin';
+mysql> CREATE DATABASE minenko_konstantin DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+mysql> GRANT ALL PRIVILEGES ON minenko_konstantin.* TO minenko_konstantin@localhost IDENTIFIED BY 'minenko_konstantin';
 ```
 Миграции, из корня проекта
 ```sh
 php artisan migrate:fresh
 ```
-
 
 # Комментарии по проекту
 Из .gitignore .env я убрал, он есть в проекте. Сделал специально, чтобы ускорить настройку окружения.

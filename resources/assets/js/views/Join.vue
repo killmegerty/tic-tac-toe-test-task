@@ -21,6 +21,7 @@
 
 <script>
     import HomeButtonComponent from '../components/HomeButtonComponent.vue';
+    import axios from 'axios';
 
     export default {
         data: () => {
@@ -35,7 +36,28 @@
                 }
             },
             onJoinBtnClick() {
-                this.$router.push('/game-human/' + this.gameSessionUUID);
+                console.log(this.gameSessionUUID.length);
+                if (this.gameSessionUUID.length == 0) {
+                    return;
+                }
+                axios.get('/api/game', {
+                    params: {
+                        game_session_uuid: this.gameSessionUUID,
+                    }
+                })
+                .then(response => {
+                    console.log(response);
+                    if (response.data.length !== 0) {
+                        this.$router.push('/game-human/' + this.gameSessionUUID);
+                    } else {
+                        alert('Wrong game session UUID');
+                        this.gameSessionUUID = '';
+                    }
+                })
+                .catch(e => {
+                    console.log('error:', e);
+                });
+
             }
         },
         components: {

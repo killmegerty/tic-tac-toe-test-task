@@ -144,11 +144,14 @@
                         }
                     })
                     .then(response => {
-                        console.log(response.data);
                         if (!response.data ||
                             (response.data.game_history !== undefined &&
                             response.data.game_history.length > 1)
                         ) {
+                            this.$router.push('/');
+                        }
+                        // prevent joining game vs ai
+                        if (response.data.mode == 'vs_ai') {
                             this.$router.push('/');
                         }
                         if (response.data.game_history.length % 2 == 0) {
@@ -170,7 +173,6 @@
                     // host : save game in server DB
                     this._createNewGameRequest(this.gameObj.gameSessionUuid)
                         .then(response => {
-                            console.log(response.data);
                             this.whoAmI = 'host';
                             this.gameLoaded = true;
                         })
@@ -190,11 +192,9 @@
             },
             _initChannelListening() {
                 if (this.currentGameMode == 'vs_human') {
-                    Echo.channel('game')
+                    Echo.channel('game.' + this.gameObj.gameSessionUuid)
                         .listen('GameHistoryCreated', (data) => {
-                            if (data.game.game_session_uuid === this.gameObj.gameSessionUuid) {
-                                this._doTurn(data.gameHistory.cell_index, data.gameHistory.cell_value);
-                            }
+                            this._doTurn(data.gameHistory.cell_index, data.gameHistory.cell_value);
                         });
                 }
             },
@@ -328,7 +328,6 @@
                 } else if (data.aiTurn === undefined) {
                     return;
                 }
-                console.log(data);
 
                 this._doTurn(data.aiTurn.cell_index, data.aiTurn.cell_value);
 

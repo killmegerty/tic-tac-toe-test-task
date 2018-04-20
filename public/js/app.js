@@ -70,7 +70,7 @@
 "use strict";
 
 
-var bind = __webpack_require__(10);
+var bind = __webpack_require__(11);
 var isBuffer = __webpack_require__(32);
 
 /*global toString:true*/
@@ -377,6 +377,115 @@ module.exports = {
 /* 1 */
 /***/ (function(module, exports) {
 
+/* globals __VUE_SSR_CONTEXT__ */
+
+// IMPORTANT: Do NOT use ES2015 features in this file.
+// This module is a runtime utility for cleaner component module output and will
+// be included in the final webpack user bundle.
+
+module.exports = function normalizeComponent (
+  rawScriptExports,
+  compiledTemplate,
+  functionalTemplate,
+  injectStyles,
+  scopeId,
+  moduleIdentifier /* server only */
+) {
+  var esModule
+  var scriptExports = rawScriptExports = rawScriptExports || {}
+
+  // ES6 modules interop
+  var type = typeof rawScriptExports.default
+  if (type === 'object' || type === 'function') {
+    esModule = rawScriptExports
+    scriptExports = rawScriptExports.default
+  }
+
+  // Vue.extend constructor export interop
+  var options = typeof scriptExports === 'function'
+    ? scriptExports.options
+    : scriptExports
+
+  // render functions
+  if (compiledTemplate) {
+    options.render = compiledTemplate.render
+    options.staticRenderFns = compiledTemplate.staticRenderFns
+    options._compiled = true
+  }
+
+  // functional template
+  if (functionalTemplate) {
+    options.functional = true
+  }
+
+  // scopedId
+  if (scopeId) {
+    options._scopeId = scopeId
+  }
+
+  var hook
+  if (moduleIdentifier) { // server build
+    hook = function (context) {
+      // 2.3 injection
+      context =
+        context || // cached call
+        (this.$vnode && this.$vnode.ssrContext) || // stateful
+        (this.parent && this.parent.$vnode && this.parent.$vnode.ssrContext) // functional
+      // 2.2 with runInNewContext: true
+      if (!context && typeof __VUE_SSR_CONTEXT__ !== 'undefined') {
+        context = __VUE_SSR_CONTEXT__
+      }
+      // inject component styles
+      if (injectStyles) {
+        injectStyles.call(this, context)
+      }
+      // register component module identifier for async chunk inferrence
+      if (context && context._registeredComponents) {
+        context._registeredComponents.add(moduleIdentifier)
+      }
+    }
+    // used by ssr in case component is cached and beforeCreate
+    // never gets called
+    options._ssrRegister = hook
+  } else if (injectStyles) {
+    hook = injectStyles
+  }
+
+  if (hook) {
+    var functional = options.functional
+    var existing = functional
+      ? options.render
+      : options.beforeCreate
+
+    if (!functional) {
+      // inject component registration as beforeCreate hook
+      options.beforeCreate = existing
+        ? [].concat(existing, hook)
+        : [hook]
+    } else {
+      // for template-only hot-reload because in that case the render fn doesn't
+      // go through the normalizer
+      options._injectStyles = hook
+      // register for functioal component in vue file
+      options.render = function renderWithStyleInjection (h, context) {
+        hook.call(context)
+        return existing(h, context)
+      }
+    }
+  }
+
+  return {
+    esModule: esModule,
+    exports: scriptExports,
+    options: options
+  }
+}
+
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports) {
+
 var toSJISFunction
 var CODEWORDS_COUNT = [
   0, // Not used
@@ -443,7 +552,7 @@ exports.toSJIS = function toSJIS (kanji) {
 
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Version = __webpack_require__(21)
@@ -616,115 +725,6 @@ exports.from = function from (value, defaultValue) {
 
 
 /***/ }),
-/* 3 */
-/***/ (function(module, exports) {
-
-/* globals __VUE_SSR_CONTEXT__ */
-
-// IMPORTANT: Do NOT use ES2015 features in this file.
-// This module is a runtime utility for cleaner component module output and will
-// be included in the final webpack user bundle.
-
-module.exports = function normalizeComponent (
-  rawScriptExports,
-  compiledTemplate,
-  functionalTemplate,
-  injectStyles,
-  scopeId,
-  moduleIdentifier /* server only */
-) {
-  var esModule
-  var scriptExports = rawScriptExports = rawScriptExports || {}
-
-  // ES6 modules interop
-  var type = typeof rawScriptExports.default
-  if (type === 'object' || type === 'function') {
-    esModule = rawScriptExports
-    scriptExports = rawScriptExports.default
-  }
-
-  // Vue.extend constructor export interop
-  var options = typeof scriptExports === 'function'
-    ? scriptExports.options
-    : scriptExports
-
-  // render functions
-  if (compiledTemplate) {
-    options.render = compiledTemplate.render
-    options.staticRenderFns = compiledTemplate.staticRenderFns
-    options._compiled = true
-  }
-
-  // functional template
-  if (functionalTemplate) {
-    options.functional = true
-  }
-
-  // scopedId
-  if (scopeId) {
-    options._scopeId = scopeId
-  }
-
-  var hook
-  if (moduleIdentifier) { // server build
-    hook = function (context) {
-      // 2.3 injection
-      context =
-        context || // cached call
-        (this.$vnode && this.$vnode.ssrContext) || // stateful
-        (this.parent && this.parent.$vnode && this.parent.$vnode.ssrContext) // functional
-      // 2.2 with runInNewContext: true
-      if (!context && typeof __VUE_SSR_CONTEXT__ !== 'undefined') {
-        context = __VUE_SSR_CONTEXT__
-      }
-      // inject component styles
-      if (injectStyles) {
-        injectStyles.call(this, context)
-      }
-      // register component module identifier for async chunk inferrence
-      if (context && context._registeredComponents) {
-        context._registeredComponents.add(moduleIdentifier)
-      }
-    }
-    // used by ssr in case component is cached and beforeCreate
-    // never gets called
-    options._ssrRegister = hook
-  } else if (injectStyles) {
-    hook = injectStyles
-  }
-
-  if (hook) {
-    var functional = options.functional
-    var existing = functional
-      ? options.render
-      : options.beforeCreate
-
-    if (!functional) {
-      // inject component registration as beforeCreate hook
-      options.beforeCreate = existing
-        ? [].concat(existing, hook)
-        : [hook]
-    } else {
-      // for template-only hot-reload because in that case the render fn doesn't
-      // go through the normalizer
-      options._injectStyles = hook
-      // register for functioal component in vue file
-      options.render = function renderWithStyleInjection (h, context) {
-        hook.call(context)
-        return existing(h, context)
-      }
-    }
-  }
-
-  return {
-    esModule: esModule,
-    exports: scriptExports,
-    options: options
-  }
-}
-
-
-/***/ }),
 /* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -738,7 +738,7 @@ module.exports = function normalizeComponent (
 
 
 
-var isArray = __webpack_require__(7)
+var isArray = __webpack_require__(8)
 
 function typedArraySupport () {
   // Can typed array instances be augmented?
@@ -1294,10 +1294,10 @@ function getDefaultAdapter() {
   var adapter;
   if (typeof XMLHttpRequest !== 'undefined') {
     // For browsers use XHR adapter
-    adapter = __webpack_require__(12);
+    adapter = __webpack_require__(13);
   } else if (typeof process !== 'undefined') {
     // For node use HTTP adapter
-    adapter = __webpack_require__(12);
+    adapter = __webpack_require__(13);
   }
   return adapter;
 }
@@ -1368,10 +1368,57 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 
 module.exports = defaults;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(11)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12)))
 
 /***/ }),
 /* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var disposed = false
+var normalizeComponent = __webpack_require__(1)
+/* script */
+var __vue_script__ = __webpack_require__(63)
+/* template */
+var __vue_template__ = __webpack_require__(64)
+/* template functional */
+var __vue_template_functional__ = false
+/* styles */
+var __vue_styles__ = null
+/* scopeId */
+var __vue_scopeId__ = null
+/* moduleIdentifier (server only) */
+var __vue_module_identifier__ = null
+var Component = normalizeComponent(
+  __vue_script__,
+  __vue_template__,
+  __vue_template_functional__,
+  __vue_styles__,
+  __vue_scopeId__,
+  __vue_module_identifier__
+)
+Component.options.__file = "resources/assets/js/components/HomeButtonComponent.vue"
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-550313a5", Component.options)
+  } else {
+    hotAPI.reload("data-v-550313a5", Component.options)
+  }
+  module.hot.dispose(function (data) {
+    disposed = true
+  })
+})()}
+
+module.exports = Component.exports
+
+
+/***/ }),
+/* 8 */
 /***/ (function(module, exports) {
 
 var toString = {}.toString;
@@ -1382,7 +1429,7 @@ module.exports = Array.isArray || function (arr) {
 
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports) {
 
 exports.L = { bit: 1 }
@@ -1438,13 +1485,13 @@ exports.from = function from (value, defaultValue) {
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(31);
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1462,7 +1509,7 @@ module.exports = function bind(fn, thisArg) {
 
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -1652,7 +1699,7 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1663,7 +1710,7 @@ var settle = __webpack_require__(35);
 var buildURL = __webpack_require__(37);
 var parseHeaders = __webpack_require__(38);
 var isURLSameOrigin = __webpack_require__(39);
-var createError = __webpack_require__(13);
+var createError = __webpack_require__(14);
 var btoa = (typeof window !== 'undefined' && window.btoa && window.btoa.bind(window)) || __webpack_require__(40);
 
 module.exports = function xhrAdapter(config) {
@@ -1839,7 +1886,7 @@ module.exports = function xhrAdapter(config) {
 
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1864,7 +1911,7 @@ module.exports = function createError(message, config, code, request, response) 
 
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1876,7 +1923,7 @@ module.exports = function isCancel(value) {
 
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1902,62 +1949,15 @@ module.exports = Cancel;
 
 
 /***/ }),
-/* 16 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var disposed = false
-var normalizeComponent = __webpack_require__(3)
-/* script */
-var __vue_script__ = __webpack_require__(63)
-/* template */
-var __vue_template__ = __webpack_require__(64)
-/* template functional */
-var __vue_template_functional__ = false
-/* styles */
-var __vue_styles__ = null
-/* scopeId */
-var __vue_scopeId__ = null
-/* moduleIdentifier (server only) */
-var __vue_module_identifier__ = null
-var Component = normalizeComponent(
-  __vue_script__,
-  __vue_template__,
-  __vue_template_functional__,
-  __vue_styles__,
-  __vue_scopeId__,
-  __vue_module_identifier__
-)
-Component.options.__file = "resources/assets/js/components/HomeButtonComponent.vue"
-
-/* hot reload */
-if (false) {(function () {
-  var hotAPI = require("vue-hot-reload-api")
-  hotAPI.install(require("vue"), false)
-  if (!hotAPI.compatible) return
-  module.hot.accept()
-  if (!module.hot.data) {
-    hotAPI.createRecord("data-v-550313a5", Component.options)
-  } else {
-    hotAPI.reload("data-v-550313a5", Component.options)
-  }
-  module.hot.dispose(function (data) {
-    disposed = true
-  })
-})()}
-
-module.exports = Component.exports
-
-
-/***/ }),
 /* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var disposed = false
-var normalizeComponent = __webpack_require__(3)
+var normalizeComponent = __webpack_require__(1)
 /* script */
-var __vue_script__ = __webpack_require__(65)
+var __vue_script__ = __webpack_require__(68)
 /* template */
-var __vue_template__ = __webpack_require__(90)
+var __vue_template__ = __webpack_require__(93)
 /* template functional */
 var __vue_template_functional__ = false
 /* styles */
@@ -2066,7 +2066,7 @@ module.exports = bytesToUuid;
 /* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var ECLevel = __webpack_require__(8)
+var ECLevel = __webpack_require__(9)
 
 var EC_BLOCKS_TABLE = [
 // L  M  Q  H
@@ -2207,11 +2207,11 @@ exports.getTotalCodewordsCount = function getTotalCodewordsCount (version, error
 /* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Utils = __webpack_require__(1)
+var Utils = __webpack_require__(2)
 var ECCode = __webpack_require__(20)
-var ECLevel = __webpack_require__(8)
-var Mode = __webpack_require__(2)
-var isArray = __webpack_require__(7)
+var ECLevel = __webpack_require__(9)
+var Mode = __webpack_require__(3)
+var isArray = __webpack_require__(8)
 
 // Generator polynomial used to encode version information
 var G18 = (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0)
@@ -2523,7 +2523,7 @@ exports.qrToImageData = function qrToImageData (imgData, qr, opts) {
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(25);
-module.exports = __webpack_require__(95);
+module.exports = __webpack_require__(98);
 
 
 /***/ }),
@@ -2539,11 +2539,11 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__views_App___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2__views_App__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__views_Index__ = __webpack_require__(58);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__views_Index___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3__views_Index__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__views_Join__ = __webpack_require__(106);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__views_Join__ = __webpack_require__(61);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__views_Join___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_4__views_Join__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__views_GameHuman__ = __webpack_require__(61);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__views_GameHuman__ = __webpack_require__(66);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__views_GameHuman___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_5__views_GameHuman__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__views_GameAi__ = __webpack_require__(92);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__views_GameAi__ = __webpack_require__(95);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__views_GameAi___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_6__views_GameAi__);
 __webpack_require__(26);
 
@@ -2614,7 +2614,7 @@ try {
  * CSRF token as a header based on the value of the "XSRF" token cookie.
  */
 
-window.axios = __webpack_require__(9);
+window.axios = __webpack_require__(10);
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
@@ -32544,7 +32544,7 @@ if (typeof jQuery === 'undefined') {
 
 
 var utils = __webpack_require__(0);
-var bind = __webpack_require__(10);
+var bind = __webpack_require__(11);
 var Axios = __webpack_require__(33);
 var defaults = __webpack_require__(6);
 
@@ -32579,9 +32579,9 @@ axios.create = function create(instanceConfig) {
 };
 
 // Expose Cancel & CancelToken
-axios.Cancel = __webpack_require__(15);
+axios.Cancel = __webpack_require__(16);
 axios.CancelToken = __webpack_require__(47);
-axios.isCancel = __webpack_require__(14);
+axios.isCancel = __webpack_require__(15);
 
 // Expose all/spread
 axios.all = function all(promises) {
@@ -32734,7 +32734,7 @@ module.exports = function normalizeHeaderName(headers, normalizedName) {
 "use strict";
 
 
-var createError = __webpack_require__(13);
+var createError = __webpack_require__(14);
 
 /**
  * Resolve or reject a Promise based on response status.
@@ -33169,7 +33169,7 @@ module.exports = InterceptorManager;
 
 var utils = __webpack_require__(0);
 var transformData = __webpack_require__(44);
-var isCancel = __webpack_require__(14);
+var isCancel = __webpack_require__(15);
 var defaults = __webpack_require__(6);
 var isAbsoluteURL = __webpack_require__(45);
 var combineURLs = __webpack_require__(46);
@@ -33329,7 +33329,7 @@ module.exports = function combineURLs(baseURL, relativeURL) {
 "use strict";
 
 
-var Cancel = __webpack_require__(15);
+var Cancel = __webpack_require__(16);
 
 /**
  * A `CancelToken` is an object that can be used to request cancellation of an operation.
@@ -49631,7 +49631,7 @@ exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
     attachTo.clearImmediate = clearImmediate;
 }(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5), __webpack_require__(11)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5), __webpack_require__(12)))
 
 /***/ }),
 /* 54 */
@@ -52268,7 +52268,7 @@ if (inBrowser && window.Vue) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var disposed = false
-var normalizeComponent = __webpack_require__(3)
+var normalizeComponent = __webpack_require__(1)
 /* script */
 var __vue_script__ = __webpack_require__(56)
 /* template */
@@ -52349,7 +52349,7 @@ if (false) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var disposed = false
-var normalizeComponent = __webpack_require__(3)
+var normalizeComponent = __webpack_require__(1)
 /* script */
 var __vue_script__ = __webpack_require__(59)
 /* template */
@@ -52501,11 +52501,11 @@ if (false) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var disposed = false
-var normalizeComponent = __webpack_require__(3)
+var normalizeComponent = __webpack_require__(1)
 /* script */
 var __vue_script__ = __webpack_require__(62)
 /* template */
-var __vue_template__ = __webpack_require__(91)
+var __vue_template__ = __webpack_require__(65)
 /* template functional */
 var __vue_template_functional__ = false
 /* styles */
@@ -52522,7 +52522,7 @@ var Component = normalizeComponent(
   __vue_scopeId__,
   __vue_module_identifier__
 )
-Component.options.__file = "resources/assets/js/views/GameHuman.vue"
+Component.options.__file = "resources/assets/js/views/Join.vue"
 
 /* hot reload */
 if (false) {(function () {
@@ -52531,9 +52531,9 @@ if (false) {(function () {
   if (!hotAPI.compatible) return
   module.hot.accept()
   if (!module.hot.data) {
-    hotAPI.createRecord("data-v-6613e298", Component.options)
+    hotAPI.createRecord("data-v-3577fe7d", Component.options)
   } else {
-    hotAPI.reload("data-v-6613e298", Component.options)
+    hotAPI.reload("data-v-3577fe7d", Component.options)
   }
   module.hot.dispose(function (data) {
     disposed = true
@@ -52549,10 +52549,18 @@ module.exports = Component.exports
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue__ = __webpack_require__(16);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue__ = __webpack_require__(7);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__components_TicTacToeComponent_vue__ = __webpack_require__(17);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__components_TicTacToeComponent_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1__components_TicTacToeComponent_vue__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_axios__ = __webpack_require__(10);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_axios___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_axios__);
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
@@ -52572,11 +52580,42 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 /* harmony default export */ __webpack_exports__["default"] = ({
     data: function data() {
-        return {};
+        return {
+            gameSessionUUID: ''
+        };
+    },
+    methods: {
+        onEnterSubmit: function onEnterSubmit(e) {
+            if (e.keyCode === 13) {
+                this.onJoinBtnClick();
+            }
+        },
+        onJoinBtnClick: function onJoinBtnClick() {
+            var _this = this;
+
+            console.log(this.gameSessionUUID.length);
+            if (this.gameSessionUUID.length == 0) {
+                return;
+            }
+            __WEBPACK_IMPORTED_MODULE_1_axios___default.a.get('/api/game', {
+                params: {
+                    game_session_uuid: this.gameSessionUUID
+                }
+            }).then(function (response) {
+                console.log(response);
+                if (response.data.length !== 0) {
+                    _this.$router.push('/game-human/' + _this.gameSessionUUID);
+                } else {
+                    alert('Wrong game session UUID');
+                    _this.gameSessionUUID = '';
+                }
+            }).catch(function (e) {
+                console.log('error:', e);
+            });
+        }
     },
     components: {
-        HomeButtonComponent: __WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue___default.a,
-        TicTacToeComponent: __WEBPACK_IMPORTED_MODULE_1__components_TicTacToeComponent_vue___default.a
+        HomeButtonComponent: __WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue___default.a
     }
 });
 
@@ -52644,15 +52683,186 @@ if (false) {
 
 /***/ }),
 /* 65 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c(
+    "div",
+    [
+      _c("home-button-component"),
+      _vm._v(" "),
+      _vm._m(0),
+      _vm._v(" "),
+      _c("div", { staticClass: "row mt-15" }, [
+        _c("div", { staticClass: "col-md-6" }, [
+          _c("div", { staticClass: "form-group" }, [
+            _c("label", { attrs: { for: "gameSessionUUID" } }, [
+              _vm._v("Game Session UUID")
+            ]),
+            _vm._v(" "),
+            _c("input", {
+              directives: [
+                {
+                  name: "model",
+                  rawName: "v-model",
+                  value: _vm.gameSessionUUID,
+                  expression: "gameSessionUUID"
+                }
+              ],
+              staticClass: "form-control",
+              attrs: {
+                type: "text",
+                id: "gameSessionUUID",
+                "aria-describedby": "emailHelp",
+                placeholder: "ex. bfa132b2-0a65-4f73-84de-98610ed40fa7"
+              },
+              domProps: { value: _vm.gameSessionUUID },
+              on: {
+                keyup: _vm.onEnterSubmit,
+                input: function($event) {
+                  if ($event.target.composing) {
+                    return
+                  }
+                  _vm.gameSessionUUID = $event.target.value
+                }
+              }
+            })
+          ]),
+          _vm._v(" "),
+          _c(
+            "button",
+            {
+              staticClass: "btn btn-default",
+              attrs: { type: "button" },
+              on: { click: _vm.onJoinBtnClick }
+            },
+            [_vm._v("Join")]
+          )
+        ])
+      ])
+    ],
+    1
+  )
+}
+var staticRenderFns = [
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("div", { staticClass: "row" }, [
+      _c("div", { staticClass: "col-md-12 text-center" }, [
+        _c("h3", [_vm._v("Join to game")])
+      ])
+    ])
+  }
+]
+render._withStripped = true
+module.exports = { render: render, staticRenderFns: staticRenderFns }
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+    require("vue-hot-reload-api")      .rerender("data-v-3577fe7d", module.exports)
+  }
+}
+
+/***/ }),
+/* 66 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var disposed = false
+var normalizeComponent = __webpack_require__(1)
+/* script */
+var __vue_script__ = __webpack_require__(67)
+/* template */
+var __vue_template__ = __webpack_require__(94)
+/* template functional */
+var __vue_template_functional__ = false
+/* styles */
+var __vue_styles__ = null
+/* scopeId */
+var __vue_scopeId__ = null
+/* moduleIdentifier (server only) */
+var __vue_module_identifier__ = null
+var Component = normalizeComponent(
+  __vue_script__,
+  __vue_template__,
+  __vue_template_functional__,
+  __vue_styles__,
+  __vue_scopeId__,
+  __vue_module_identifier__
+)
+Component.options.__file = "resources/assets/js/views/GameHuman.vue"
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-6613e298", Component.options)
+  } else {
+    hotAPI.reload("data-v-6613e298", Component.options)
+  }
+  module.hot.dispose(function (data) {
+    disposed = true
+  })
+})()}
+
+module.exports = Component.exports
+
+
+/***/ }),
+/* 67 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_axios__ = __webpack_require__(9);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue__ = __webpack_require__(7);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__components_TicTacToeComponent_vue__ = __webpack_require__(17);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__components_TicTacToeComponent_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1__components_TicTacToeComponent_vue__);
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+
+
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+    data: function data() {
+        return {};
+    },
+    components: {
+        HomeButtonComponent: __WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue___default.a,
+        TicTacToeComponent: __WEBPACK_IMPORTED_MODULE_1__components_TicTacToeComponent_vue___default.a
+    }
+});
+
+/***/ }),
+/* 68 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_axios__ = __webpack_require__(10);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_axios___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_axios__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_uuid__ = __webpack_require__(66);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_uuid__ = __webpack_require__(69);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_uuid___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_uuid__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_qrcode__ = __webpack_require__(69);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_qrcode__ = __webpack_require__(72);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_qrcode___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_qrcode__);
 //
 //
@@ -52820,8 +53030,11 @@ function getDefaultData() {
                         game_session_uuid: this.gameObj.gameSessionUuid
                     }
                 }).then(function (response) {
-                    console.log(response.data);
                     if (!response.data || response.data.game_history !== undefined && response.data.game_history.length > 1) {
+                        _this.$router.push('/');
+                    }
+                    // prevent joining game vs ai
+                    if (response.data.mode == 'vs_ai') {
                         _this.$router.push('/');
                     }
                     if (response.data.game_history.length % 2 == 0) {
@@ -52841,7 +53054,6 @@ function getDefaultData() {
             } else {
                 // host : save game in server DB
                 this._createNewGameRequest(this.gameObj.gameSessionUuid).then(function (response) {
-                    console.log(response.data);
                     _this.whoAmI = 'host';
                     _this.gameLoaded = true;
                 }).catch(function (e) {
@@ -52862,10 +53074,8 @@ function getDefaultData() {
             var _this2 = this;
 
             if (this.currentGameMode == 'vs_human') {
-                Echo.channel('game').listen('GameHistoryCreated', function (data) {
-                    if (data.game.game_session_uuid === _this2.gameObj.gameSessionUuid) {
-                        _this2._doTurn(data.gameHistory.cell_index, data.gameHistory.cell_value);
-                    }
+                Echo.channel('game.' + this.gameObj.gameSessionUuid).listen('GameHistoryCreated', function (data) {
+                    _this2._doTurn(data.gameHistory.cell_index, data.gameHistory.cell_value);
                 });
             }
         },
@@ -53024,7 +53234,6 @@ function getDefaultData() {
             } else if (data.aiTurn === undefined) {
                 return;
             }
-            console.log(data);
 
             this._doTurn(data.aiTurn.cell_index, data.aiTurn.cell_value);
         }
@@ -53032,11 +53241,11 @@ function getDefaultData() {
 });
 
 /***/ }),
-/* 66 */
+/* 69 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var v1 = __webpack_require__(67);
-var v4 = __webpack_require__(68);
+var v1 = __webpack_require__(70);
+var v4 = __webpack_require__(71);
 
 var uuid = v4;
 uuid.v1 = v1;
@@ -53046,7 +53255,7 @@ module.exports = uuid;
 
 
 /***/ }),
-/* 67 */
+/* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var rng = __webpack_require__(18);
@@ -53161,7 +53370,7 @@ module.exports = v1;
 
 
 /***/ }),
-/* 68 */
+/* 71 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var rng = __webpack_require__(18);
@@ -53196,13 +53405,13 @@ module.exports = v4;
 
 
 /***/ }),
-/* 69 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var canPromise = __webpack_require__(70)
-var QRCode = __webpack_require__(72)
-var CanvasRenderer = __webpack_require__(88)
-var SvgRenderer = __webpack_require__(89)
+var canPromise = __webpack_require__(73)
+var QRCode = __webpack_require__(75)
+var CanvasRenderer = __webpack_require__(91)
+var SvgRenderer = __webpack_require__(92)
 
 function renderCanvas (renderFunc, canvas, text, opts, cb) {
   var args = [].slice.call(arguments, 1)
@@ -53276,13 +53485,13 @@ exports.toString = renderCanvas.bind(null, function (data, _, opts) {
 
 
 /***/ }),
-/* 70 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var G = __webpack_require__(71)
+var G = __webpack_require__(74)
 
 module.exports = function() {
   return (
@@ -53293,7 +53502,7 @@ module.exports = function() {
 
 
 /***/ }),
-/* 71 */
+/* 74 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -53305,24 +53514,24 @@ module.exports = (typeof self === 'object' && self.self === self && self) ||
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(5)))
 
 /***/ }),
-/* 72 */
+/* 75 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Buffer = __webpack_require__(4)
-var Utils = __webpack_require__(1)
-var ECLevel = __webpack_require__(8)
-var BitBuffer = __webpack_require__(73)
-var BitMatrix = __webpack_require__(74)
-var AlignmentPattern = __webpack_require__(75)
-var FinderPattern = __webpack_require__(76)
-var MaskPattern = __webpack_require__(77)
+var Utils = __webpack_require__(2)
+var ECLevel = __webpack_require__(9)
+var BitBuffer = __webpack_require__(76)
+var BitMatrix = __webpack_require__(77)
+var AlignmentPattern = __webpack_require__(78)
+var FinderPattern = __webpack_require__(79)
+var MaskPattern = __webpack_require__(80)
 var ECCode = __webpack_require__(20)
-var ReedSolomonEncoder = __webpack_require__(78)
+var ReedSolomonEncoder = __webpack_require__(81)
 var Version = __webpack_require__(21)
-var FormatInfo = __webpack_require__(81)
-var Mode = __webpack_require__(2)
-var Segments = __webpack_require__(82)
-var isArray = __webpack_require__(7)
+var FormatInfo = __webpack_require__(84)
+var Mode = __webpack_require__(3)
+var Segments = __webpack_require__(85)
+var isArray = __webpack_require__(8)
 
 /**
  * QRCode for JavaScript
@@ -53810,7 +54019,7 @@ exports.create = function create (data, options) {
 
 
 /***/ }),
-/* 73 */
+/* 76 */
 /***/ (function(module, exports) {
 
 function BitBuffer () {
@@ -53853,7 +54062,7 @@ module.exports = BitBuffer
 
 
 /***/ }),
-/* 74 */
+/* 77 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Buffer = __webpack_require__(4)
@@ -53928,7 +54137,7 @@ module.exports = BitMatrix
 
 
 /***/ }),
-/* 75 */
+/* 78 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /**
@@ -53941,7 +54150,7 @@ module.exports = BitMatrix
  * and their number depends on the symbol version.
  */
 
-var getSymbolSize = __webpack_require__(1).getSymbolSize
+var getSymbolSize = __webpack_require__(2).getSymbolSize
 
 /**
  * Calculate the row/column coordinates of the center module of each alignment pattern
@@ -54017,10 +54226,10 @@ exports.getPositions = function getPositions (version) {
 
 
 /***/ }),
-/* 76 */
+/* 79 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var getSymbolSize = __webpack_require__(1).getSymbolSize
+var getSymbolSize = __webpack_require__(2).getSymbolSize
 var FINDER_PATTERN_SIZE = 7
 
 /**
@@ -54045,7 +54254,7 @@ exports.getPositions = function getPositions (version) {
 
 
 /***/ }),
-/* 77 */
+/* 80 */
 /***/ (function(module, exports) {
 
 /**
@@ -54285,11 +54494,11 @@ exports.getBestMask = function getBestMask (data, setupFormatFunc) {
 
 
 /***/ }),
-/* 78 */
+/* 81 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Buffer = __webpack_require__(4)
-var Polynomial = __webpack_require__(79)
+var Polynomial = __webpack_require__(82)
 
 function ReedSolomonEncoder (degree) {
   this.genPoly = undefined
@@ -54350,11 +54559,11 @@ module.exports = ReedSolomonEncoder
 
 
 /***/ }),
-/* 79 */
+/* 82 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Buffer = __webpack_require__(4)
-var GF = __webpack_require__(80)
+var GF = __webpack_require__(83)
 
 /**
  * Multiplies two polynomials inside Galois Field
@@ -54420,7 +54629,7 @@ exports.generateECPolynomial = function generateECPolynomial (degree) {
 
 
 /***/ }),
-/* 80 */
+/* 83 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Buffer = __webpack_require__(4)
@@ -54498,10 +54707,10 @@ exports.mul = function mul (x, y) {
 
 
 /***/ }),
-/* 81 */
+/* 84 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Utils = __webpack_require__(1)
+var Utils = __webpack_require__(2)
 
 var G15 = (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0)
 var G15_MASK = (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1)
@@ -54533,17 +54742,17 @@ exports.getEncodedBits = function getEncodedBits (errorCorrectionLevel, mask) {
 
 
 /***/ }),
-/* 82 */
+/* 85 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Mode = __webpack_require__(2)
-var NumericData = __webpack_require__(83)
-var AlphanumericData = __webpack_require__(84)
-var ByteData = __webpack_require__(85)
-var KanjiData = __webpack_require__(86)
+var Mode = __webpack_require__(3)
+var NumericData = __webpack_require__(86)
+var AlphanumericData = __webpack_require__(87)
+var ByteData = __webpack_require__(88)
+var KanjiData = __webpack_require__(89)
 var Regex = __webpack_require__(22)
-var Utils = __webpack_require__(1)
-var dijkstra = __webpack_require__(87)
+var Utils = __webpack_require__(2)
+var dijkstra = __webpack_require__(90)
 
 /**
  * Returns UTF8 byte length
@@ -54869,10 +55078,10 @@ exports.rawSplit = function rawSplit (data) {
 
 
 /***/ }),
-/* 83 */
+/* 86 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Mode = __webpack_require__(2)
+var Mode = __webpack_require__(3)
 
 function NumericData (data) {
   this.mode = Mode.NUMERIC
@@ -54918,10 +55127,10 @@ module.exports = NumericData
 
 
 /***/ }),
-/* 84 */
+/* 87 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Mode = __webpack_require__(2)
+var Mode = __webpack_require__(3)
 
 /**
  * Array of characters available in alphanumeric mode
@@ -54983,11 +55192,11 @@ module.exports = AlphanumericData
 
 
 /***/ }),
-/* 85 */
+/* 88 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Buffer = __webpack_require__(4)
-var Mode = __webpack_require__(2)
+var Mode = __webpack_require__(3)
 
 function ByteData (data) {
   this.mode = Mode.BYTE
@@ -55016,11 +55225,11 @@ module.exports = ByteData
 
 
 /***/ }),
-/* 86 */
+/* 89 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Mode = __webpack_require__(2)
-var Utils = __webpack_require__(1)
+var Mode = __webpack_require__(3)
+var Utils = __webpack_require__(2)
 
 function KanjiData (data) {
   this.mode = Mode.KANJI
@@ -55076,7 +55285,7 @@ module.exports = KanjiData
 
 
 /***/ }),
-/* 87 */
+/* 90 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -55248,7 +55457,7 @@ if (true) {
 
 
 /***/ }),
-/* 88 */
+/* 91 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Utils = __webpack_require__(23)
@@ -55317,7 +55526,7 @@ exports.renderToDataURL = function renderToDataURL (qrData, canvas, options) {
 
 
 /***/ }),
-/* 89 */
+/* 92 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var Utils = __webpack_require__(23)
@@ -55404,7 +55613,7 @@ exports.render = function render (qrData, options, cb) {
 
 
 /***/ }),
-/* 90 */
+/* 93 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var render = function() {
@@ -55636,7 +55845,7 @@ if (false) {
 }
 
 /***/ }),
-/* 91 */
+/* 94 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var render = function() {
@@ -55677,15 +55886,15 @@ if (false) {
 }
 
 /***/ }),
-/* 92 */
+/* 95 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var disposed = false
-var normalizeComponent = __webpack_require__(3)
+var normalizeComponent = __webpack_require__(1)
 /* script */
-var __vue_script__ = __webpack_require__(93)
+var __vue_script__ = __webpack_require__(96)
 /* template */
-var __vue_template__ = __webpack_require__(94)
+var __vue_template__ = __webpack_require__(97)
 /* template functional */
 var __vue_template_functional__ = false
 /* styles */
@@ -55724,12 +55933,12 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 93 */
+/* 96 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue__ = __webpack_require__(16);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue__ = __webpack_require__(7);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__components_TicTacToeComponent_vue__ = __webpack_require__(17);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__components_TicTacToeComponent_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1__components_TicTacToeComponent_vue__);
@@ -55761,7 +55970,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 });
 
 /***/ }),
-/* 94 */
+/* 97 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var render = function() {
@@ -55802,207 +56011,10 @@ if (false) {
 }
 
 /***/ }),
-/* 95 */
+/* 98 */
 /***/ (function(module, exports) {
 
 // removed by extract-text-webpack-plugin
-
-/***/ }),
-/* 96 */,
-/* 97 */,
-/* 98 */,
-/* 99 */,
-/* 100 */,
-/* 101 */,
-/* 102 */,
-/* 103 */,
-/* 104 */,
-/* 105 */,
-/* 106 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var disposed = false
-var normalizeComponent = __webpack_require__(3)
-/* script */
-var __vue_script__ = __webpack_require__(107)
-/* template */
-var __vue_template__ = __webpack_require__(108)
-/* template functional */
-var __vue_template_functional__ = false
-/* styles */
-var __vue_styles__ = null
-/* scopeId */
-var __vue_scopeId__ = null
-/* moduleIdentifier (server only) */
-var __vue_module_identifier__ = null
-var Component = normalizeComponent(
-  __vue_script__,
-  __vue_template__,
-  __vue_template_functional__,
-  __vue_styles__,
-  __vue_scopeId__,
-  __vue_module_identifier__
-)
-Component.options.__file = "resources/assets/js/views/Join.vue"
-
-/* hot reload */
-if (false) {(function () {
-  var hotAPI = require("vue-hot-reload-api")
-  hotAPI.install(require("vue"), false)
-  if (!hotAPI.compatible) return
-  module.hot.accept()
-  if (!module.hot.data) {
-    hotAPI.createRecord("data-v-3577fe7d", Component.options)
-  } else {
-    hotAPI.reload("data-v-3577fe7d", Component.options)
-  }
-  module.hot.dispose(function (data) {
-    disposed = true
-  })
-})()}
-
-module.exports = Component.exports
-
-
-/***/ }),
-/* 107 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue__ = __webpack_require__(16);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue__);
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-
-
-
-/* harmony default export */ __webpack_exports__["default"] = ({
-    data: function data() {
-        return {
-            gameSessionUUID: ''
-        };
-    },
-    methods: {
-        onEnterSubmit: function onEnterSubmit(e) {
-            if (e.keyCode === 13) {
-                this.onJoinBtnClick();
-            }
-        },
-        onJoinBtnClick: function onJoinBtnClick() {
-            this.$router.push('/game-human/' + this.gameSessionUUID);
-        }
-    },
-    components: {
-        HomeButtonComponent: __WEBPACK_IMPORTED_MODULE_0__components_HomeButtonComponent_vue___default.a
-    }
-});
-
-/***/ }),
-/* 108 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var render = function() {
-  var _vm = this
-  var _h = _vm.$createElement
-  var _c = _vm._self._c || _h
-  return _c(
-    "div",
-    [
-      _c("home-button-component"),
-      _vm._v(" "),
-      _vm._m(0),
-      _vm._v(" "),
-      _c("div", { staticClass: "row mt-15" }, [
-        _c("div", { staticClass: "col-md-6" }, [
-          _c("div", { staticClass: "form-group" }, [
-            _c("label", { attrs: { for: "gameSessionUUID" } }, [
-              _vm._v("Game Session UUID")
-            ]),
-            _vm._v(" "),
-            _c("input", {
-              directives: [
-                {
-                  name: "model",
-                  rawName: "v-model",
-                  value: _vm.gameSessionUUID,
-                  expression: "gameSessionUUID"
-                }
-              ],
-              staticClass: "form-control",
-              attrs: {
-                type: "text",
-                id: "gameSessionUUID",
-                "aria-describedby": "emailHelp",
-                placeholder: "ex. bfa132b2-0a65-4f73-84de-98610ed40fa7"
-              },
-              domProps: { value: _vm.gameSessionUUID },
-              on: {
-                keyup: _vm.onEnterSubmit,
-                input: function($event) {
-                  if ($event.target.composing) {
-                    return
-                  }
-                  _vm.gameSessionUUID = $event.target.value
-                }
-              }
-            })
-          ]),
-          _vm._v(" "),
-          _c(
-            "button",
-            {
-              staticClass: "btn btn-default",
-              attrs: { type: "button" },
-              on: { click: _vm.onJoinBtnClick }
-            },
-            [_vm._v("Join")]
-          )
-        ])
-      ])
-    ],
-    1
-  )
-}
-var staticRenderFns = [
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("div", { staticClass: "row" }, [
-      _c("div", { staticClass: "col-md-12 text-center" }, [
-        _c("h3", [_vm._v("Join to game")])
-      ])
-    ])
-  }
-]
-render._withStripped = true
-module.exports = { render: render, staticRenderFns: staticRenderFns }
-if (false) {
-  module.hot.accept()
-  if (module.hot.data) {
-    require("vue-hot-reload-api")      .rerender("data-v-3577fe7d", module.exports)
-  }
-}
 
 /***/ })
 /******/ ]);

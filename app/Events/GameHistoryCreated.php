@@ -37,6 +37,6 @@ class GameHistoryCreated implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return new Channel('game');
+        return new Channel('game.' . $this->game->game_session_uuid);
     }
 }

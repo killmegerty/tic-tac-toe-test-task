@@ -1,5 +1,7 @@
 <?php
 
+use App\Game;
+
 /*
 |--------------------------------------------------------------------------
 | Broadcast Channels
@@ -15,6 +17,11 @@ Broadcast::channel('App.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
 
-Broadcast::channel('game', function ($gameSessionUuid) {
-    return true;
+Broadcast::channel('game.{gameSessionUuid}', function ($gameSessionUuid) {
+    $game = Game::where('game_session_uuid', $gameSessionUuid)->first();
+    if ($game) {
+        return true;
+    } else {
+        return false;
+    }
 });

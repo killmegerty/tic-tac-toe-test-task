@@ -9,7 +9,8 @@ use App\GameHistory;
 
 class GameController extends Controller
 {
-    public function cellClickHandler(Request $request) {
+    public function cellClickHandler(Request $request)
+    {
         $request->validate([
             'game_session_uuid' => 'required',
             'cell_index' => 'required',
@@ -66,7 +67,25 @@ class GameController extends Controller
         }
     }
 
-    protected function _updateGameBoard($gameSessionUuid) {
+    public function getGame(Request $request)
+    {
+        return Game::where('game_session_uuid', $request->game_session_uuid)
+                   ->with('GameHistory')
+                   ->first();
+    }
+
+    public function postGame(Request $request)
+    {
+        $game = new Game();
+        $game->game_session_uuid = $request->game_session_uuid;
+        $game->mode = $request->mode;
+        $game->save();
+
+        return $game;
+    }
+
+    protected function _updateGameBoard($gameSessionUuid)
+    {
         $gameBoard = [null, null, null, null, null, null, null, null, null];
         $game = Game::with('gameHistory')
                 ->where('game_session_uuid', $gameSessionUuid)
@@ -77,11 +96,13 @@ class GameController extends Controller
         return $gameBoard;
     }
 
-    protected function _getGameBoard($gameSessionUuid) {
+    protected function _getGameBoard($gameSessionUuid)
+    {
         return $this->_updateGameBoard($gameSessionUuid);
     }
 
-    protected function _checkWinner($gameBoard, $gameSessionUuid) {
+    protected function _checkWinner($gameBoard, $gameSessionUuid)
+    {
         if (
             ($gameBoard[0] == 'O' && $gameBoard[1] == 'O' && $gameBoard[2] == 'O') ||
             ($gameBoard[0] == 'O' && $gameBoard[3] == 'O' && $gameBoard[6] == 'O') ||
